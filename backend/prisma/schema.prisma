@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  currency  String   @default("UGX")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  products  Product[]
+  customers Customer[]
+  suppliers Supplier[]
+  invoices  Invoice[]
+  quotes    Quote[]
+  sales     Sale[]
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("OWNER")
+  businessId   Int
+  business     Business @relation(fields: [businessId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Product {
+  id            Int      @id @default(autoincrement())
+  name          String
+  sku           String?
+  category      String?
+  sellingPrice  Float
+  costPrice     Float
+  stockQuantity Int      @default(0)
+  reorderLevel  Int      @default(5)
+  businessId    Int
+  business      Business @relation(fields: [businessId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  saleItems     SaleItem[]
+  invoiceItems  InvoiceItem[]
+  quoteItems    QuoteItem[]
+  inventoryLogs InventoryTransaction[]
+}
+
+model Customer {
+  id         Int       @id @default(autoincrement())
+  name       String
+  phone      String?
+  email      String?
+  address    String?
+  businessId Int
+  business   Business  @relation(fields: [businessId], references: [id])
+  createdAt  DateTime  @default(now())
+
+  invoices   Invoice[]
+  quotes     Quote[]
+  sales      Sale[]
+}
+
+model Supplier {
+  id         Int      @id @default(autoincrement())
+  name       String
+  phone      String?
+  email      String?
+  address    String?
+  businessId Int
+  business   Business @relation(fields: [businessId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model InventoryTransaction {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  type      String
+  quantity  Int
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model Sale {
+  id            Int        @id @default(autoincrement())
+  businessId    Int
+  business      Business   @relation(fields: [businessId], references: [id])
+  customerId    Int?
+  customer      Customer?  @relation(fields: [customerId], references: [id])
+  total         Float
+  paymentMethod String     @default("CASH")
+  createdAt     DateTime   @default(now())
+
+  items         SaleItem[]
+}
+
+model SaleItem {
+  id        Int     @id @default(autoincrement())
+  saleId    Int
+  sale      Sale    @relation(fields: [saleId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+}
+
+model Invoice {
+  id            Int           @id @default(autoincrement())
+  invoiceNumber String        @unique
+  businessId    Int
+  business      Business      @relation(fields: [businessId], references: [id])
+  customerId    Int
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  total         Float
+  status        String        @default("UNPAID")
+  dueDate       DateTime?
+  createdAt     DateTime      @default(now())
+
+  items         InvoiceItem[]
+}
+
+model InvoiceItem {
+  id        Int     @id @default(autoincrement())
+  invoiceId Int
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+}
+
+model Quote {
+  id          Int         @id @default(autoincrement())
+  quoteNumber String      @unique
+  businessId  Int
+  business    Business    @relation(fields: [businessId], references: [id])
+  customerId  Int
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  total       Float
+  status      String      @default("DRAFT")
+  validUntil  DateTime?
+  createdAt   DateTime    @default(now())
+
+  items       QuoteItem[]
+}
+
+model QuoteItem {
+  id        Int     @id @default(autoincrement())
+  quoteId   Int
+  quote     Quote   @relation(fields: [quoteId], references: [id])
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+}
+
+model Forecast {
+  id               Int      @id @default(autoincrement())
+  productId        Int
+  forecastDate     DateTime
+  predictedQuantity Float
+  confidence       Float?
+  createdAt        DateTime @default(now())
+}
